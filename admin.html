@@ -1,0 +1,121 @@
+<!-- MODAL LOGIN PIN SUPER ADMIN -->
+<div id="admin-login-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+  <div class="glass-panel w-full max-w-sm p-6 bg-white/95 rounded-2xl shadow-2xl border border-white">
+    <div class="text-center mb-5">
+      <div class="w-12 h-12 bg-amber-100 text-amber-800 rounded-2xl flex items-center justify-center mx-auto mb-2 text-xl font-bold shadow-sm">
+        🔒
+      </div>
+      <h3 class="text-lg font-bold text-slate-800">Login Super Admin</h3>
+      <p class="text-xs text-slate-500 mt-1">Masukkan PIN untuk mengelola database</p>
+    </div>
+
+    <form onsubmit="verifyAdminPin(event)" class="space-y-4">
+      <div>
+        <input type="password" id="admin-pin-input" required placeholder="Masukkan PIN Admin..." class="w-full px-4 py-3 rounded-xl border border-slate-200 text-center font-bold text-lg tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none">
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeAdminLoginModal()" class="w-1/2 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-semibold text-xs transition">Batal</button>
+        <button type="submit" class="w-1/2 py-2.5 bg-amber-700 hover:bg-amber-800 text-white rounded-xl font-bold text-xs shadow-md transition">Masuk</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL DASHBOARD CONTROL PANEL SUPER ADMIN -->
+<div id="admin-panel-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50 overflow-y-auto">
+  <div class="glass-panel w-full max-w-md p-6 bg-white/95 rounded-2xl shadow-2xl border border-white space-y-4 my-8">
+    
+    <div class="flex justify-between items-center border-b pb-3 border-slate-200">
+      <div class="flex items-center gap-2">
+        <span class="p-2 bg-amber-100 text-amber-800 rounded-xl text-xs font-bold">PRO</span>
+        <h3 class="text-base font-bold text-slate-800">Super Admin Database Tools</h3>
+      </div>
+      <button onclick="closeAdminPanelModal()" class="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+    </div>
+
+    <div class="grid grid-cols-1 gap-2.5">
+      <!-- 1. Safe Migrate DB -->
+      <button onclick="runSetupDb()" class="w-full p-3 bg-teal-50 hover:bg-teal-100 text-teal-900 rounded-xl border border-teal-200/80 flex items-center justify-between transition text-xs font-bold">
+        <div class="flex items-center gap-2.5">
+          <span class="text-base">⚡</span>
+          <div class="text-left">
+            <p>Safe Migrate DB</p>
+            <p class="text-[10px] font-normal text-teal-700">Perbaiki header & struktur sheet aman</p>
+          </div>
+        </div>
+        <span>&rarr;</span>
+      </button>
+
+      <!-- 2. Backup DB -->
+      <button onclick="runBackupDb()" class="w-full p-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 rounded-xl border border-indigo-200/80 flex items-center justify-between transition text-xs font-bold">
+        <div class="flex items-center gap-2.5">
+          <span class="text-base">📦</span>
+          <div class="text-left">
+            <p>Backup Database JSON</p>
+            <p class="text-[10px] font-normal text-indigo-700">Download cadangan data menu & transaksi</p>
+          </div>
+        </div>
+        <span>&rarr;</span>
+      </button>
+
+      <!-- 3. Restore DB -->
+      <div class="p-3 bg-amber-50 rounded-xl border border-amber-200/80 space-y-2">
+        <div class="flex items-center gap-2.5 text-xs font-bold text-amber-900">
+          <span class="text-base">🔄</span>
+          <div>
+            <p>Restore Database</p>
+            <p class="text-[10px] font-normal text-amber-700">Unggah file JSON cadangan</p>
+          </div>
+        </div>
+        <input type="file" id="restore-file-input" accept=".json" onchange="promptRestoreDb(event)" class="text-[11px] text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-200 file:text-amber-900 hover:file:bg-amber-300 w-full cursor-pointer">
+      </div>
+
+      <!-- 4. Reset Transaction DB -->
+      <button onclick="promptResetDb()" class="w-full p-3 bg-rose-50 hover:bg-rose-100 text-rose-900 rounded-xl border border-rose-200/80 flex items-center justify-between transition text-xs font-bold">
+        <div class="flex items-center gap-2.5">
+          <span class="text-base">⚠️</span>
+          <div class="text-left">
+            <p>Reset Database Transaksi</p>
+            <p class="text-[10px] font-normal text-rose-700">Kosongkan seluruh riwayat transaksi</p>
+          </div>
+        </div>
+        <span>&rarr;</span>
+      </button>
+
+      <!-- 5. Ganti PIN Super Admin -->
+      <div class="p-3 bg-slate-100/80 rounded-xl border border-slate-200 space-y-2.5 mt-1">
+        <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
+          <span class="text-base">🔑</span>
+          <p>Ganti PIN Super Admin</p>
+        </div>
+        <form onsubmit="handleUpdatePin(event)" class="space-y-2 text-xs">
+          <input type="password" id="pin-old-input" required placeholder="PIN Saat Ini..." class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-1 focus:ring-amber-500">
+          <input type="password" id="pin-new-input" required placeholder="PIN Baru..." class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-1 focus:ring-amber-500">
+          <button type="submit" class="w-full py-1.5 bg-amber-800 hover:bg-amber-900 text-white rounded-lg font-bold text-xs shadow-sm transition">
+            Simpan PIN Baru
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="pt-2 text-center">
+      <button onclick="closeAdminPanelModal()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-xs">
+        Tutup Admin Panel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KONFIRMASI TINDAKAN ADMIN -->
+<div id="admin-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+  <div class="glass-panel w-full max-w-sm p-5 bg-white rounded-2xl shadow-2xl text-center space-y-3">
+    <div class="w-10 h-10 bg-rose-100 text-rose-700 rounded-xl flex items-center justify-center mx-auto text-lg font-bold">⚠️</div>
+    <h4 id="confirm-modal-title" class="font-bold text-slate-800 text-sm">Konfirmasi Tindakan</h4>
+    <p id="confirm-modal-message" class="text-xs text-slate-600">Apakah Anda yakin ingin melanjutkan?</p>
+    <div class="flex justify-end gap-2 pt-3">
+      <button type="button" onclick="closeAdminConfirmModal()" class="w-1/2 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold text-xs">Batal</button>
+      <button type="button" id="confirm-modal-action-btn" class="w-1/2 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow">Lanjutkan</button>
+    </div>
+  </div>
+</div>
