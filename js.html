@@ -1,0 +1,800 @@
+<script>
+  var allMenuItems = [];
+  var currentTab = 'pilihan-menu';
+  var selectedCategoryFilter = 'All';
+  var currentPage = 1;
+  var totalPagesCount = 1;
+  var reportTransactionsCache = [];
+  var deferredPwaPrompt = null;
+
+  // Multi-Customer Cart State
+  var customers = [
+    { id: 1, name: 'Pelanggan 1', cart: [] }
+  ];
+  var activeCustomerId = 1;
+  var currentPaymentMethod = 'Cash';
+
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPwaPrompt = e;
+    var btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.classList.remove('hidden');
+  });
+
+  function installPWA() {
+    if (deferredPwaPrompt) {
+      deferredPwaPrompt.prompt();
+      deferredPwaPrompt.userChoice.then(function(choiceResult) {
+        if (choiceResult.outcome === 'accepted') {
+          showToast('Aplikasi Kasir berhasil di-install ke Home Screen!', 'success');
+        }
+        deferredPwaPrompt = null;
+        var btn = document.getElementById('pwa-install-btn');
+        if (btn) btn.classList.add('hidden');
+      });
+    } else {
+      showToast('Untuk iPhone: Ketuk tombol Share -> Add to Home Screen (Tambah ke Utama)', 'info');
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    initApp();
+
+    // AUTO CLOSE SIDEBAR SAAT KLIK SEMBARANG TEMPAT (CLICK OUTSIDE)
+    document.addEventListener('click', function(e) {
+      var sidebar = document.getElementById('sidebar-menu');
+      var toggleBtn = e.target.closest('button[aria-label="Toggle Menu"]');
+      
+      if (sidebar && !sidebar.classList.contains('hidden') && window.innerWidth < 768) {
+        if (!sidebar.contains(e.target) && !toggleBtn) {
+          sidebar.classList.add('hidden');
+        }
+      }
+    });
+  });
+
+  function initApp() {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      loadBackendData();
+    } else {
+      showToast('Running on Local Canvas Preview Mode', 'info');
+      loadDummyState();
+    }
+    switchTab('pilihan-menu');
+    renderCustomerTabs();
+    renderCart();
+  }
+
+  function toggleMobileSidebar(e) {
+    if (e) e.stopPropagation();
+    var sidebar = document.getElementById('sidebar-menu');
+    if (sidebar) {
+      sidebar.classList.toggle('hidden');
+    }
+  }
+
+  function loadBackendData() {
+    showToast('Memuat data dari Google Sheets...', 'info');
+    
+    google.script.run.withSuccessHandler(function(stats) {
+      updateDashboardUI(stats);
+    }).getDashboardStats();
+
+    google.script.run.withSuccessHandler(function(menu) {
+      allMenuItems = menu || [];
+      renderCatalog();
+      renderCrudTable();
+    }).getMenuItems();
+
+    fetchReports(1);
+  }
+
+  function loadDummyState() {
+    allMenuItems = [
+      { menuId: 'MNU-001', namaMenu: 'Nasi Rames Rendang', kategori: 'Makanan', harga: 22000, fotoUrl: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=300', status: 'Tersedia', salesCount: 42 },
+      { menuId: 'MNU-002', namaMenu: 'Ayam Goreng Lengkuas', kategori: 'Makanan', harga: 18000, fotoUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=300', status: 'Tersedia', salesCount: 28 },
+      { menuId: 'MNU-003', namaMenu: 'Tahu Tempe Bacem', kategori: 'Makanan', harga: 5000, fotoUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300', status: 'Tersedia', salesCount: 19 },
+      { menuId: 'MNU-004', namaMenu: 'Telur Balado', kategori: 'Makanan', harga: 7000, fotoUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=300', status: 'Tersedia', salesCount: 14 },
+      { menuId: 'MNU-005', namaMenu: 'Es Teh Manis', kategori: 'Minuman', harga: 5000, fotoUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=300', status: 'Tersedia', salesCount: 65 },
+      { menuId: 'MNU-006', namaMenu: 'Es Jeruk Peras', kategori: 'Minuman', harga: 7000, fotoUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=300', status: 'Tersedia', salesCount: 31 },
+      { menuId: 'MNU-007', namaMenu: 'Teh Hangat', kategori: 'Minuman', harga: 4000, fotoUrl: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=300', status: 'Tersedia', salesCount: 12 },
+      { menuId: 'MNU-008', namaMenu: 'Kerupuk', kategori: 'Tambahan', harga: 2000, fotoUrl: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=300', status: 'Tersedia', salesCount: 55 },
+      { menuId: 'MNU-009', namaMenu: 'Gorengan', kategori: 'Tambahan', harga: 2000, fotoUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=300', status: 'Tersedia', salesCount: 48 },
+      { menuId: 'MNU-010', namaMenu: 'Pisang', kategori: 'Tambahan', harga: 3000, fotoUrl: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300', status: 'Tersedia', salesCount: 15 },
+      { menuId: 'MNU-011', namaMenu: 'Kopi Kapal Api', kategori: 'Cafe', harga: 5000, fotoUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=300', status: 'Tersedia', salesCount: 38 },
+      { menuId: 'MNU-012', namaMenu: 'Indocafe', kategori: 'Cafe', harga: 5000, fotoUrl: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=300', status: 'Tersedia', salesCount: 10 },
+      { menuId: 'MNU-013', namaMenu: 'Kopi ABC Susu', kategori: 'Cafe', harga: 5000, fotoUrl: 'https://images.unsplash.com/photo-1572442388796-11668ba67e53?w=300', status: 'Tersedia', salesCount: 22 },
+      { menuId: 'MNU-014', namaMenu: 'Nutrisari', kategori: 'Cafe', harga: 5000, fotoUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=300', status: 'Tersedia', salesCount: 16 }
+    ];
+    renderCatalog();
+    renderCrudTable();
+    updateDashboardUI({
+      omsetHariIni: 145000,
+      totalTransaksi: 6,
+      makananTerlaris: 'Nasi Rames Rendang (12)',
+      pctCash: 70,
+      pctQris: 30
+    });
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    
+    if (window.innerWidth < 768) {
+      var sidebar = document.getElementById('sidebar-menu');
+      if (sidebar && !sidebar.classList.contains('hidden')) {
+        sidebar.classList.add('hidden');
+      }
+    }
+
+    ['pilihan-menu', 'dashboard', 'list-harga', 'laporan', 'admin'].forEach(function(t) {
+      var el = document.getElementById('nav-' + t);
+      if (el) {
+        if (t === tab) {
+          el.classList.add('nav-btn-active');
+        } else {
+          el.classList.remove('nav-btn-active');
+        }
+      }
+    });
+
+    document.getElementById('view-catalog').classList.add('hidden');
+    document.getElementById('view-dashboard').classList.add('hidden');
+    document.getElementById('view-list-harga').classList.add('hidden');
+    document.getElementById('view-laporan').classList.add('hidden');
+
+    var titleEl = document.getElementById('page-title');
+
+    if (tab === 'pilihan-menu') {
+      document.getElementById('view-catalog').classList.remove('hidden');
+      titleEl.innerText = 'Pilihan Menu Kasir';
+      renderCatalog();
+    } else if (tab === 'dashboard') {
+      document.getElementById('view-dashboard').classList.remove('hidden');
+      titleEl.innerText = 'Dashboard Overview';
+    } else if (tab === 'list-harga') {
+      document.getElementById('view-list-harga').classList.remove('hidden');
+      titleEl.innerText = 'Kelola List Harga & Menu';
+      renderCrudTable();
+    } else if (tab === 'laporan') {
+      document.getElementById('view-laporan').classList.remove('hidden');
+      titleEl.innerText = 'Laporan Keuangan & Riwayat';
+      fetchReports(1);
+    }
+  }
+
+  function setCategoryFilter(category) {
+    selectedCategoryFilter = category;
+    
+    ['all', 'makanan', 'minuman', 'tambahan', 'cafe'].forEach(function(c) {
+      var btn = document.getElementById('filter-btn-' + c);
+      if (btn) {
+        if (c.toLowerCase() === category.toLowerCase()) {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-teal-700 text-white whitespace-nowrap';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white/80 transition whitespace-nowrap';
+        }
+      }
+    });
+
+    renderCatalog();
+  }
+
+  function renderCatalog() {
+    var grid = document.getElementById('catalog-grid');
+    var searchVal = (document.getElementById('catalog-search').value || '').toLowerCase();
+    grid.innerHTML = '';
+
+    // Render Quick Add Tambahan Bar
+    renderQuickAddBar();
+
+    // Filter items
+    var filtered = allMenuItems.filter(function(item) {
+      var matchesCat = (selectedCategoryFilter === 'All' || item.kategori.toLowerCase() === selectedCategoryFilter.toLowerCase());
+      var matchesSearch = item.namaMenu.toLowerCase().indexOf(searchVal) >= 0;
+      return matchesCat && matchesSearch;
+    });
+
+    // AUTO-SORTING BEST SELLER PER SUB-MENU: Urutkan berdasarkan salesCount terbanyak di posisi paling atas
+    filtered.sort(function(a, b) {
+      var countA = Number(a.salesCount || 0);
+      var countB = Number(b.salesCount || 0);
+      return countB - countA;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">Tidak ada menu ditemukan.</div>';
+      return;
+    }
+
+    // Tentukan item terbanyak untuk lencana 🔥 BEST SELLER di kategori aktif
+    var topSalesMax = 0;
+    filtered.forEach(function(it) {
+      var s = Number(it.salesCount || 0);
+      if (s > topSalesMax) topSalesMax = s;
+    });
+
+    filtered.forEach(function(item) {
+      var card = document.createElement('div');
+      card.className = 'glass-card rounded-2xl p-3 flex flex-col justify-between border border-white/80 relative';
+      
+      var isAvailable = item.status === 'Tersedia';
+      var badgeColor = isAvailable ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
+
+      // Sematkan Badge 🔥 BEST SELLER jika merupakan item terlaris (salesCount > 0)
+      var isBestSeller = (topSalesMax > 0 && Number(item.salesCount || 0) === topSalesMax);
+      var bestSellerBadge = isBestSeller 
+        ? '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md z-10 flex items-center gap-0.5">🔥 BEST SELLER</span>' 
+        : '';
+
+      card.innerHTML = 
+        bestSellerBadge +
+        '<div class="relative mb-2 rounded-xl overflow-hidden h-28 bg-slate-100">' +
+          '<img src="' + item.fotoUrl + '" alt="' + item.namaMenu + '" class="w-full h-full object-cover">' +
+          '<span class="absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-bold ' + badgeColor + ' z-10">' + item.status + '</span>' +
+        '</div>' +
+        '<div>' +
+          '<h4 class="font-bold text-slate-800 text-xs sm:text-sm line-clamp-1">' + item.namaMenu + '</h4>' +
+          '<p class="text-teal-700 font-bold text-sm mt-0.5">Rp ' + item.harga.toLocaleString('id-ID') + '</p>' +
+        '</div>' +
+        '<button onclick="addToCart(\'' + item.menuId + '\')" ' + (isAvailable ? '' : 'disabled') + ' class="mt-3 w-full py-1.5 bg-teal-700 hover:bg-teal-800 disabled:bg-slate-300 text-white rounded-xl text-xs font-semibold transition shadow-sm flex items-center justify-center gap-1">' +
+          (isAvailable ? '+ Tambah' : 'Habis') +
+        '</button>';
+
+      grid.appendChild(card);
+    });
+  }
+
+  function renderQuickAddBar() {
+    var container = document.getElementById('quick-add-buttons');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // Ambil item kategori Tambahan & urutkan berdasar kepopuleran
+    var tambahanItems = allMenuItems.filter(function(m) {
+      return m.kategori.toLowerCase() === 'tambahan' && m.status === 'Tersedia';
+    });
+
+    tambahanItems.sort(function(a, b) {
+      return Number(b.salesCount || 0) - Number(a.salesCount || 0);
+    });
+
+    if (tambahanItems.length === 0) {
+      container.innerHTML = '<span class="text-[11px] text-amber-700">Belum ada menu tambahan.</span>';
+      return;
+    }
+
+    tambahanItems.forEach(function(item) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.onclick = function() { addToCart(item.menuId); };
+      btn.className = 'px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-200/80 hover:bg-amber-300 text-amber-900 border border-amber-300 transition whitespace-nowrap shadow-sm flex items-center gap-1 shrink-0';
+      btn.innerHTML = '<span>+ ' + item.namaMenu + '</span> <span class="text-[10px] opacity-75 font-normal">(Rp ' + item.harga.toLocaleString('id-ID') + ')</span>';
+      container.appendChild(btn);
+    });
+  }
+
+  function filterCatalog() {
+    renderCatalog();
+  }
+
+  function renderCustomerTabs() {
+    var container = document.getElementById('customer-tabs');
+    container.innerHTML = '';
+
+    customers.forEach(function(cust) {
+      var activeClass = (cust.id === activeCustomerId) ? 'bg-teal-700 text-white shadow-sm' : 'bg-white/60 text-slate-700 hover:bg-white/90';
+      var btn = document.createElement('button');
+      btn.className = 'px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition border border-teal-100 ' + activeClass;
+      btn.innerText = cust.name;
+      btn.onclick = function() {
+        activeCustomerId = cust.id;
+        renderCustomerTabs();
+        renderCart();
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  function addCustomer() {
+    var nextId = customers.length + 1;
+    customers.push({
+      id: nextId,
+      name: 'Pelanggan ' + nextId,
+      cart: []
+    });
+    activeCustomerId = nextId;
+    renderCustomerTabs();
+    renderCart();
+  }
+
+  function addToCart(menuId) {
+    var item = allMenuItems.find(function(m) { return m.menuId === menuId; });
+    if (!item) return;
+
+    var currentCust = customers.find(function(c) { return c.id === activeCustomerId; });
+    if (!currentCust) return;
+
+    var existing = currentCust.cart.find(function(i) { return i.menuId === menuId; });
+    if (existing) {
+      existing.qty++;
+    } else {
+      currentCust.cart.push({
+        menuId: item.menuId,
+        namaMenu: item.namaMenu,
+        hargaAsli: item.harga,
+        qty: 1
+      });
+    }
+
+    renderCart();
+    showToast(item.namaMenu + ' ditambahkan ke ' + currentCust.name, 'success');
+  }
+
+  function updateQty(menuId, delta) {
+    var currentCust = customers.find(function(c) { return c.id === activeCustomerId; });
+    if (!currentCust) return;
+
+    var item = currentCust.cart.find(function(i) { return i.menuId === menuId; });
+    if (item) {
+      item.qty += delta;
+      if (item.qty <= 0) {
+        currentCust.cart = currentCust.cart.filter(function(i) { return i.menuId !== menuId; });
+      }
+    }
+    renderCart();
+  }
+
+  function renderCart() {
+    var container = document.getElementById('cart-items');
+    container.innerHTML = '';
+
+    var isOjolPromo = document.getElementById('promo-ojol').checked;
+    var currentCust = customers.find(function(c) { return c.id === activeCustomerId; });
+
+    if (!currentCust || currentCust.cart.length === 0) {
+      container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">Keranjang ' + (currentCust ? currentCust.name : '') + ' masih kosong.</p>';
+    } else {
+      currentCust.cart.forEach(function(item) {
+        var finalHarga = item.hargaAsli;
+        if (isOjolPromo && item.namaMenu.toLowerCase().indexOf('es teh') >= 0) {
+          finalHarga = 0;
+        }
+
+        var row = document.createElement('div');
+        row.className = 'flex justify-between items-center p-2 rounded-xl bg-white/70 border border-slate-100 text-xs';
+        
+        var priceDisplay = (finalHarga === 0) ? '<span class="line-through text-slate-400 mr-1">Rp ' + item.hargaAsli.toLocaleString('id-ID') + '</span> <span class="text-emerald-600 font-bold">FREE (Ojol)</span>' : 'Rp ' + (finalHarga * item.qty).toLocaleString('id-ID');
+
+        row.innerHTML = 
+          '<div class="flex-1">' +
+            '<p class="font-bold text-slate-800">' + item.namaMenu + '</p>' +
+            '<p class="text-[11px] text-slate-500">' + priceDisplay + '</p>' +
+          '</div>' +
+          '<div class="flex items-center gap-1 bg-slate-100 rounded-lg px-1.5 py-0.5">' +
+            '<button onclick="updateQty(\'' + item.menuId + '\', -1)" class="w-5 h-5 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200 rounded">-</button>' +
+            '<span class="w-4 text-center font-bold text-slate-800">' + item.qty + '</span>' +
+            '<button onclick="updateQty(\'' + item.menuId + '\', 1)" class="w-5 h-5 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200 rounded">+</button>' +
+          '</div>';
+
+        container.appendChild(row);
+      });
+    }
+
+    calculateGrandTotal();
+    calculateChange();
+  }
+
+  function calculateGrandTotal() {
+    var isOjolPromo = document.getElementById('promo-ojol') ? document.getElementById('promo-ojol').checked : false;
+    var total = 0;
+
+    customers.forEach(function(cust) {
+      cust.cart.forEach(function(item) {
+        var price = item.hargaAsli;
+        if (isOjolPromo && item.namaMenu.toLowerCase().indexOf('es teh') >= 0) {
+          price = 0;
+        }
+        total += (price * item.qty);
+      });
+    });
+
+    var totalEl = document.getElementById('grand-total');
+    if (totalEl) {
+      totalEl.innerText = 'Rp ' + total.toLocaleString('id-ID');
+    }
+    return total;
+  }
+
+  function calculateChange() {
+    var grandTotal = calculateGrandTotal();
+    var cashInput = Number(document.getElementById('cash-input').value || 0);
+    var change = cashInput - grandTotal;
+
+    var changeEl = document.getElementById('cash-change');
+    if (!changeEl) return;
+
+    if (cashInput <= 0 && grandTotal > 0) {
+      changeEl.innerText = 'Rp 0';
+      changeEl.className = 'font-bold text-teal-800';
+    } else if (change < 0) {
+      changeEl.innerText = 'Kurang Rp ' + Math.abs(change).toLocaleString('id-ID');
+      changeEl.className = 'font-bold text-rose-600';
+    } else {
+      changeEl.innerText = 'Rp ' + change.toLocaleString('id-ID');
+      changeEl.className = 'font-bold text-teal-800';
+    }
+  }
+
+  function setExactCash() {
+    var total = calculateGrandTotal();
+    document.getElementById('cash-input').value = total;
+    calculateChange();
+  }
+
+  function setQuickCash(amount) {
+    document.getElementById('cash-input').value = amount;
+    calculateChange();
+  }
+
+  function setPaymentMethod(method) {
+    currentPaymentMethod = method;
+    var cashBtn = document.getElementById('pay-cash-btn');
+    var qrisBtn = document.getElementById('pay-qris-btn');
+    var cashCalc = document.getElementById('cash-calculator');
+
+    if (method === 'Cash') {
+      cashBtn.className = 'py-2 text-xs font-bold rounded-xl border border-teal-600 bg-teal-700 text-white shadow-sm';
+      qrisBtn.className = 'py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white/70 text-slate-700 hover:bg-teal-50';
+      cashCalc.classList.remove('hidden');
+    } else {
+      qrisBtn.className = 'py-2 text-xs font-bold rounded-xl border border-teal-600 bg-teal-700 text-white shadow-sm';
+      cashBtn.className = 'py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white/70 text-slate-700 hover:bg-teal-50';
+      cashCalc.classList.add('hidden');
+    }
+  }
+
+  function clearCart() {
+    customers = [{ id: 1, name: 'Pelanggan 1', cart: [] }];
+    activeCustomerId = 1;
+    document.getElementById('cash-input').value = '';
+    renderCustomerTabs();
+    renderCart();
+    showToast('Keranjang direset', 'info');
+  }
+
+  function openCheckoutModal() {
+    var total = calculateGrandTotal();
+    if (total === 0) {
+      showToast('Keranjang belanja masih kosong!', 'error');
+      return;
+    }
+
+    var cashPaid = Number(document.getElementById('cash-input').value || 0);
+    if (currentPaymentMethod === 'Cash' && cashPaid < total) {
+      showToast('Uang dibayar kurang dari total tagihan!', 'error');
+      return;
+    }
+
+    var isOjolPromo = document.getElementById('promo-ojol').checked;
+    var summaryContainer = document.getElementById('modal-summary-items');
+    summaryContainer.innerHTML = '';
+
+    customers.forEach(function(cust) {
+      if (cust.cart.length > 0) {
+        var custBlock = document.createElement('div');
+        custBlock.className = 'border-b border-slate-200/60 pb-1 mb-1 last:border-0';
+        
+        var header = '<p class="font-bold text-teal-900 text-[11px] mb-0.5">' + cust.name + '</p>';
+        var itemsText = '';
+        
+        cust.cart.forEach(function(it) {
+          var prc = (isOjolPromo && it.namaMenu.toLowerCase().indexOf('es teh') >= 0) ? 0 : it.hargaAsli;
+          itemsText += '<div class="flex justify-between text-[11px] text-slate-600 pl-2"><span>• ' + it.namaMenu + ' x' + it.qty + '</span><span>Rp ' + (prc * it.qty).toLocaleString('id-ID') + '</span></div>';
+        });
+
+        custBlock.innerHTML = header + itemsText;
+        summaryContainer.appendChild(custBlock);
+      }
+    });
+
+    var finalCash = (currentPaymentMethod === 'Cash') ? cashPaid : total;
+    var finalChange = (currentPaymentMethod === 'Cash') ? (cashPaid - total) : 0;
+
+    document.getElementById('modal-pay-badge').innerText = currentPaymentMethod;
+    document.getElementById('modal-total-tagihan').innerText = 'Rp ' + total.toLocaleString('id-ID');
+    document.getElementById('modal-cash-dibayar').innerText = 'Rp ' + finalCash.toLocaleString('id-ID');
+    document.getElementById('modal-kembalian').innerText = 'Rp ' + finalChange.toLocaleString('id-ID');
+
+    var modal = document.getElementById('checkout-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeCheckoutModal() {
+    var modal = document.getElementById('checkout-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function confirmSubmitCheckout() {
+    closeCheckoutModal();
+
+    var total = calculateGrandTotal();
+    var cashPaid = Number(document.getElementById('cash-input').value || 0);
+
+    var payload = {
+      totalBayar: total,
+      metodePembayaran: currentPaymentMethod,
+      cashDibayar: (currentPaymentMethod === 'Cash') ? cashPaid : total,
+      kembalian: (currentPaymentMethod === 'Cash') ? (cashPaid - total) : 0,
+      detailPelanggan: customers,
+      catatanPromo: document.getElementById('promo-ojol').checked ? 'Free Es Teh Ojol' : '-'
+    };
+
+    showToast('Memproses transaksi...', 'info');
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(function(res) {
+        if (res.success) {
+          showToast('Transaksi Sukses! ID: ' + res.transactionId, 'success');
+          clearCart();
+          loadBackendData();
+        } else {
+          showToast('Gagal: ' + res.message, 'error');
+        }
+      }).saveTransaction(payload);
+    } else {
+      showToast('Simulasi Transaksi Sukses! (Canvas Mode)', 'success');
+      clearCart();
+    }
+  }
+
+  function renderCrudTable() {
+    var tbody = document.getElementById('crud-table-body');
+    var search = (document.getElementById('crud-search').value || '').toLowerCase();
+    tbody.innerHTML = '';
+
+    var filtered = allMenuItems.filter(function(m) {
+      return m.namaMenu.toLowerCase().indexOf(search) >= 0 || m.menuId.toLowerCase().indexOf(search) >= 0;
+    });
+
+    filtered.forEach(function(item) {
+      var tr = document.createElement('tr');
+      tr.className = 'hover:bg-white/40 transition';
+
+      tr.innerHTML = 
+        '<td class="p-3.5 font-mono text-xs font-semibold text-slate-600">' + item.menuId + '</td>' +
+        '<td class="p-3.5"><img src="' + item.fotoUrl + '" class="w-10 h-10 rounded-lg object-cover"></td>' +
+        '<td class="p-3.5 font-bold text-slate-800">' + item.namaMenu + '</td>' +
+        '<td class="p-3.5 text-xs text-slate-600">' + item.kategori + '</td>' +
+        '<td class="p-3.5 font-semibold text-teal-800">Rp ' + item.harga.toLocaleString('id-ID') + '</td>' +
+        '<td class="p-3.5"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold ' + (item.status === 'Tersedia' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800') + '">' + item.status + '</span></td>' +
+        '<td class="p-3.5 text-center flex justify-center gap-2">' +
+          '<button onclick="openMenuModal(\'' + item.menuId + '\')" class="px-2.5 py-1 text-xs bg-slate-200 hover:bg-slate-300 rounded-lg font-medium">Edit</button>' +
+          '<button onclick="toggleStatus(\'' + item.menuId + '\', \'' + (item.status === 'Tersedia' ? 'Habis' : 'Tersedia') + '\')" class="px-2.5 py-1 text-xs bg-teal-100 hover:bg-teal-200 text-teal-800 rounded-lg font-medium">Toggle Status</button>' +
+        '</td>';
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function openMenuModal(menuId) {
+    var modal = document.getElementById('menu-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    if (menuId) {
+      var item = allMenuItems.find(function(m) { return m.menuId === menuId; });
+      if (item) {
+        document.getElementById('modal-title').innerText = 'Edit Menu (' + item.menuId + ')';
+        document.getElementById('form-menu-id').value = item.menuId;
+        document.getElementById('form-nama').value = item.namaMenu;
+        document.getElementById('form-kategori').value = item.kategori;
+        document.getElementById('form-harga').value = item.harga;
+        document.getElementById('form-foto').value = item.fotoUrl;
+        document.getElementById('form-status').value = item.status;
+      }
+    } else {
+      document.getElementById('modal-title').innerText = 'Tambah Menu Baru';
+      document.getElementById('menu-form').reset();
+      document.getElementById('form-menu-id').value = '';
+    }
+  }
+
+  function closeMenuModal() {
+    var modal = document.getElementById('menu-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function handleSaveMenu(e) {
+    e.preventDefault();
+    var data = {
+      menuId: document.getElementById('form-menu-id').value,
+      namaMenu: document.getElementById('form-nama').value,
+      kategori: document.getElementById('form-kategori').value,
+      harga: Number(document.getElementById('form-harga').value),
+      fotoUrl: document.getElementById('form-foto').value,
+      status: document.getElementById('form-status').value
+    };
+
+    showToast('Menyimpan menu...', 'info');
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(function(res) {
+        closeMenuModal();
+        showToast(res.message, res.success ? 'success' : 'error');
+        loadBackendData();
+      }).saveMenuItem(data);
+    } else {
+      closeMenuModal();
+      showToast('Simulasi simpan menu sukses', 'success');
+    }
+  }
+
+  function toggleStatus(menuId, newStatus) {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(function(res) {
+        showToast(res.message, 'success');
+        loadBackendData();
+      }).toggleMenuStatus(menuId, newStatus);
+    } else {
+      var item = allMenuItems.find(function(m) { return m.menuId === menuId; });
+      if (item) item.status = newStatus;
+      renderCrudTable();
+    }
+  }
+
+  function fetchReports(page) {
+    currentPage = page || 1;
+    var search = document.getElementById('report-search').value || '';
+    var dateVal = document.getElementById('report-date').value || '';
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(function(res) {
+        reportTransactionsCache = res.transactions || [];
+        renderReportTable(reportTransactionsCache);
+        totalPagesCount = res.totalPages || 1;
+        document.getElementById('page-info').innerText = 'Halaman ' + res.currentPage + ' dari ' + totalPagesCount + ' (' + res.totalCount + ' Data)';
+        document.getElementById('prev-page-btn').disabled = (res.currentPage <= 1);
+        document.getElementById('next-page-btn').disabled = (res.currentPage >= totalPagesCount);
+      }).getTransactionHistory(currentPage, 15, search, dateVal);
+    } else {
+      reportTransactionsCache = [];
+      renderReportTable([]);
+    }
+  }
+
+  function renderReportTable(list) {
+    var tbody = document.getElementById('report-table-body');
+    tbody.innerHTML = '';
+
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">Belum ada riwayat transaksi.</td></tr>';
+      return;
+    }
+
+    list.forEach(function(t) {
+      var tr = document.createElement('tr');
+      tr.className = 'hover:bg-white/40 transition';
+
+      tr.innerHTML = 
+        '<td class="p-3.5 font-mono text-xs font-bold text-teal-800">' + t.transactionId + '</td>' +
+        '<td class="p-3.5 text-xs text-slate-600">' + t.tanggalJam + '</td>' +
+        '<td class="p-3.5 font-bold text-slate-800">Rp ' + t.totalBayar.toLocaleString('id-ID') + '</td>' +
+        '<td class="p-3.5"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold ' + (t.metodePembayaran === 'Cash' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800') + '">' + t.metodePembayaran + '</span></td>' +
+        '<td class="p-3.5 text-xs text-slate-600">Rp ' + t.cashDibayar.toLocaleString('id-ID') + ' / Rp ' + t.kembalian.toLocaleString('id-ID') + '</td>' +
+        '<td class="p-3.5 text-center">' +
+          '<button onclick="openTransactionDetailModal(\'' + t.transactionId + '\')" class="px-3 py-1 bg-teal-100 hover:bg-teal-200 text-teal-900 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 mx-auto">' +
+            '🔍 Detail' +
+          '</button>' +
+        '</td>';
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function openTransactionDetailModal(trxId) {
+    var item = reportTransactionsCache.find(function(t) { return t.transactionId === trxId; });
+    if (!item) return;
+
+    document.getElementById('trx-detail-id').innerText = item.transactionId;
+    document.getElementById('trx-detail-time').innerText = item.tanggalJam;
+    document.getElementById('trx-detail-total').innerText = 'Rp ' + item.totalBayar.toLocaleString('id-ID');
+    document.getElementById('trx-detail-pay').innerText = item.metodePembayaran + ' (Dibayar: Rp ' + item.cashDibayar.toLocaleString('id-ID') + ')';
+    document.getElementById('trx-detail-change').innerText = 'Rp ' + item.kembalian.toLocaleString('id-ID');
+
+    var container = document.getElementById('trx-detail-items-container');
+    container.innerHTML = '';
+
+    try {
+      var details = JSON.parse(item.detailPelanggan || '[]');
+      details.forEach(function(cust) {
+        if (cust.cart && cust.cart.length > 0) {
+          var block = document.createElement('div');
+          block.className = 'border-b pb-1.5 mb-1.5 last:border-0';
+          
+          var header = '<p class="font-bold text-teal-800 text-[11px]">' + cust.name + '</p>';
+          var subList = '';
+          
+          cust.cart.forEach(function(it) {
+            subList += '<div class="flex justify-between text-[11px] text-slate-600 pl-2"><span>• ' + it.namaMenu + ' x' + it.qty + '</span><span>Rp ' + ((it.hargaAsli || 0) * it.qty).toLocaleString('id-ID') + '</span></div>';
+          });
+
+          block.innerHTML = header + subList;
+          container.appendChild(block);
+        }
+      });
+    } catch (e) {
+      container.innerHTML = '<p class="text-slate-400 text-xs">Detail rincian tidak dapat dibaca.</p>';
+    }
+
+    var modal = document.getElementById('trx-detail-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeTrxDetailModal() {
+    var modal = document.getElementById('trx-detail-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function printReceipt() {
+    var content = document.getElementById('printable-receipt').innerHTML;
+    var printWindow = window.open('', '_blank', 'height=600,width=400');
+    
+    printWindow.document.write('<html><head><title>Struk Pembayaran</title>');
+    printWindow.document.write('<style>body{font-family:sans-serif;padding:20px;font-size:12px;}.text-center{text-align:center;}.font-bold{font-weight:bold;}.flex{display:flex;justify-content:space-between;}.border-b{border-bottom:1px solid #ccc;padding-bottom:5px;margin-bottom:5px;}</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(content);
+    printWindow.document.write('</body></html>');
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(function() {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  }
+
+  function changePage(delta) {
+    var target = currentPage + delta;
+    if (target >= 1 && target <= totalPagesCount) {
+      fetchReports(target);
+    }
+  }
+
+  function updateDashboardUI(stats) {
+    document.getElementById('stat-omset').innerText = 'Rp ' + (stats.omsetHariIni || 0).toLocaleString('id-ID');
+    document.getElementById('stat-transaksi').innerText = stats.totalTransaksi || 0;
+    document.getElementById('stat-terlaris').innerText = stats.makananTerlaris || '-';
+    document.getElementById('stat-cash-pct').innerText = (stats.pctCash || 0) + '%';
+    document.getElementById('stat-qris-pct').innerText = (stats.pctQris || 0) + '%';
+  }
+
+  function showToast(message, type) {
+    var container = document.getElementById('toast-container');
+    var toast = document.createElement('div');
+    
+    var bg = 'bg-slate-800 text-white';
+    if (type === 'success') bg = 'bg-emerald-600 text-white';
+    if (type === 'error') bg = 'bg-rose-600 text-white';
+    if (type === 'info') bg = 'bg-teal-700 text-white';
+
+    toast.className = 'px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg transition-all transform translate-y-2 opacity-0 ' + bg;
+    toast.innerText = message;
+
+    container.appendChild(toast);
+
+    setTimeout(function() {
+      toast.classList.remove('translate-y-2', 'opacity-0');
+    }, 10);
+
+    setTimeout(function() {
+      toast.classList.add('opacity-0');
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 3000);
+  }
+</script>
