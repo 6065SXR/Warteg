@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kasir Warteg Modern - Glassmorphism</title>
+  
+  <!-- PWA META TAGS FOR ANDROID & IOS (IPHONE) -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Warteg POS">
+  <meta name="theme-color" content="#0f766e">
+  <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=180">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <?!= include('css'); ?>
+</head>
+<body class="p-2 sm:p-4 md:p-6 min-h-screen flex flex-col justify-between">
+
+  <div id="app" class="max-w-[1600px] mx-auto w-full flex flex-col md:flex-row gap-4 md:gap-6 min-h-[92vh]">
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside id="sidebar-menu" class="glass-panel glass-sidebar w-full md:w-64 p-4 hidden md:flex flex-col justify-between shrink-0 transition-all duration-300 z-40">
+      <div>
+        <!-- Logo Brand -->
+        <div class="flex items-center gap-3 px-3 py-3 mb-6 border-b border-teal-100/60">
+          <div class="w-10 h-10 rounded-xl bg-teal-700 text-white flex items-center justify-center font-bold text-xl shadow-md">
+            W
+          </div>
+          <div>
+            <h1 class="font-bold text-slate-800 text-lg leading-tight">Warteg Modern</h1>
+            <p class="text-xs text-teal-700 font-medium">Smart POS Zettbos</p>
+          </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="space-y-1.5">
+          <button onclick="switchTab('pilihan-menu')" id="nav-pilihan-menu" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 font-medium hover:bg-white/60 transition text-sm nav-btn-active">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            Pilihan Menu
+          </button>
+
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 font-medium hover:bg-white/60 transition text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            Dashboard
+          </button>
+
+          <button onclick="switchTab('list-harga')" id="nav-list-harga" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 font-medium hover:bg-white/60 transition text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+            Kelola Menu (CRUD)
+          </button>
+
+          <button onclick="switchTab('laporan')" id="nav-laporan" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 font-medium hover:bg-white/60 transition text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Laporan Keuangan
+          </button>
+
+          <!-- MENU SUPER ADMIN -->
+          <button onclick="openAdminLoginModal()" id="nav-admin" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-amber-800 bg-amber-50/80 hover:bg-amber-100/90 font-medium transition text-sm border border-amber-200/70 mt-4">
+            <svg class="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            Super Admin
+          </button>
+        </nav>
+      </div>
+
+      <!-- Quick Status & PWA Install Button -->
+      <div class="mt-auto pt-4 border-t border-teal-100/60 space-y-2">
+        <button id="pwa-install-btn" onclick="installPWA()" class="hidden w-full py-2 px-3 bg-teal-800 hover:bg-teal-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+          <span>📱</span> Install App Kasir (PWA)
+        </button>
+
+        <div class="p-3 bg-teal-50/70 rounded-xl border border-teal-100 flex items-center gap-3">
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <div>
+            <p class="text-xs font-semibold text-teal-900">System Online</p>
+            <p class="text-[10px] text-teal-600">Asia/Jakarta (WIB)</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col gap-4 md:gap-6 overflow-hidden">
+
+      <!-- TOP HEADER RINGKAS & TAMPILAN MOBILE SLIM -->
+      <header class="glass-panel p-2.5 sm:p-3.5 flex justify-between items-center gap-2 shrink-0">
+        <div>
+          <h2 id="page-title" class="text-base sm:text-lg font-bold text-slate-800 leading-tight">Pilihan Menu Kasir</h2>
+          <p class="text-[11px] text-slate-500 leading-none mt-0.5">Input pesanan makanan & minuman secara cepat.</p>
+        </div>
+
+        <!-- Single Clean Mobile Hamburger Menu Button -->
+        <button onclick="toggleMobileSidebar(event)" aria-label="Toggle Menu" class="md:hidden p-2 text-teal-800 bg-teal-100/80 hover:bg-teal-200/90 rounded-xl border border-teal-200 flex items-center justify-center shadow-sm shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </header>
+
+      <!-- VIEW TAB 1: PILIHAN MENU (KATALOG GABUNGAN) -->
+      <section id="view-catalog" class="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden">
+        <!-- Katalog Grid Container -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+          <!-- Search & Filter Category Bar -->
+          <div class="mb-3 flex flex-col sm:flex-row gap-2 justify-between">
+            <input type="text" id="catalog-search" oninput="filterCatalog()" placeholder="Cari nama menu..." class="w-full sm:w-64 px-4 py-2 rounded-xl border border-slate-200/80 bg-white/70 backdrop-blur focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+            
+            <!-- Quick Filter Pills -->
+            <div class="flex gap-1.5 bg-white/50 p-1 rounded-xl border border-slate-200/60 self-start sm:self-auto overflow-x-auto max-w-full">
+              <button onclick="setCategoryFilter('All')" id="filter-btn-all" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-teal-700 text-white whitespace-nowrap">Semua</button>
+              <button onclick="setCategoryFilter('Makanan')" id="filter-btn-makanan" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white/80 transition whitespace-nowrap">Makanan</button>
+              <button onclick="setCategoryFilter('Minuman')" id="filter-btn-minuman" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white/80 transition whitespace-nowrap">Minuman</button>
+              <button onclick="setCategoryFilter('Tambahan')" id="filter-btn-tambahan" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white/80 transition whitespace-nowrap">Tambahan</button>
+              <button onclick="setCategoryFilter('Cafe')" id="filter-btn-cafe" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-white/80 transition whitespace-nowrap">Cafe</button>
+            </div>
+          </div>
+
+          <!-- FLOATING QUICK ADD TAMBAHAN BAR -->
+          <div id="quick-add-tambahan-bar" class="mb-3 p-2 bg-amber-50/90 rounded-xl border border-amber-200/80 flex items-center gap-2 overflow-x-auto shrink-0 shadow-sm">
+            <span class="text-[11px] font-bold text-amber-900 whitespace-nowrap flex items-center gap-1">
+              ⚡ Quick Add Tambahan:
+            </span>
+            <div id="quick-add-buttons" class="flex items-center gap-1.5 overflow-x-auto">
+              <!-- Rendered dynamically via js.html -->
+            </div>
+          </div>
+          
+          <!-- Menu Grid -->
+          <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pr-1 pb-4">
+            <!-- Dynamic Menu Cards Inserted Here -->
+          </div>
+        </div>
+
+        <!-- POS DRAWER & MULTI-PELANGGAN GABUNGAN -->
+        <div class="w-full lg:w-96 glass-panel p-4 flex flex-col justify-between shrink-0 h-[600px] lg:h-auto overflow-hidden">
+          
+          <!-- Header Cart -->
+          <div class="border-b border-slate-200/60 pb-3">
+            <div class="flex justify-between items-center mb-2">
+              <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                🛒 Pesanan Kasir
+              </h3>
+              <button onclick="clearCart()" class="text-xs text-rose-600 hover:underline font-semibold">Reset Cart</button>
+            </div>
+
+            <!-- Sub-Pelanggan Selector / Tab -->
+            <div class="flex items-center gap-1.5 overflow-x-auto py-1" id="customer-tabs">
+              <!-- Customer tabs generated dynamically -->
+            </div>
+            <button onclick="addCustomer()" class="mt-2 w-full text-xs font-semibold py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-lg border border-teal-200 transition">
+              + Tambah Sub-Pelanggan
+            </button>
+          </div>
+
+          <!-- Items List per Active Customer -->
+          <div id="cart-items" class="flex-1 overflow-y-auto my-3 space-y-2 pr-1">
+            <!-- Items inserted dynamically -->
+          </div>
+
+          <!-- PROMO OJOL MODULE -->
+          <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 mb-3 text-xs">
+            <label class="flex items-center gap-2 cursor-pointer font-medium text-amber-900">
+              <input type="checkbox" id="promo-ojol" onchange="renderCart()" class="rounded text-teal-600 focus:ring-teal-500 w-4 h-4">
+              <span>🛵 Promo Ojol: <strong>Free Es Teh Manis</strong></span>
+            </label>
+          </div>
+
+          <!-- Total Breakdown & Checkout -->
+          <div class="border-t border-slate-200/60 pt-3 space-y-2">
+            <div class="flex justify-between text-sm text-slate-600">
+              <span>Total Tagihan Gabungan:</span>
+              <span id="grand-total" class="font-bold text-slate-900 text-base">Rp 0</span>
+            </div>
+
+            <!-- Payment Methods -->
+            <div class="grid grid-cols-2 gap-2 my-2">
+              <button onclick="setPaymentMethod('Cash')" id="pay-cash-btn" class="py-2 text-xs font-bold rounded-xl border border-teal-600 bg-teal-700 text-white shadow-sm">
+                💵 Cash
+              </button>
+              <button onclick="setPaymentMethod('QRIS')" id="pay-qris-btn" class="py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white/70 text-slate-700 hover:bg-teal-50">
+                📱 QRIS
+              </button>
+            </div>
+
+            <!-- Cash Payment Details & Quick Money Preset -->
+            <div id="cash-calculator" class="space-y-2 bg-white/50 p-2.5 rounded-xl border border-slate-200/80 text-xs">
+              <div class="flex items-center justify-between gap-2">
+                <span>Uang Dibayar:</span>
+                <input type="number" id="cash-input" oninput="calculateChange()" placeholder="0" class="w-28 px-2 py-1 border rounded text-right font-semibold focus:ring-1 focus:ring-teal-500">
+              </div>
+
+              <!-- QUICK MONEY NOMINAL BUTTONS -->
+              <div class="flex flex-wrap gap-1 pt-1 border-t border-slate-200/60">
+                <button type="button" onclick="setExactCash()" class="px-2 py-1 text-[10px] font-bold bg-teal-100 hover:bg-teal-200 text-teal-800 rounded-lg transition">Uang Pas</button>
+                <button type="button" onclick="setQuickCash(10000)" class="px-2 py-1 text-[10px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 rounded-lg transition">10rb</button>
+                <button type="button" onclick="setQuickCash(20000)" class="px-2 py-1 text-[10px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 rounded-lg transition">20rb</button>
+                <button type="button" onclick="setQuickCash(50000)" class="px-2 py-1 text-[10px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 rounded-lg transition">50rb</button>
+                <button type="button" onclick="setQuickCash(100000)" class="px-2 py-1 text-[10px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 rounded-lg transition">100rb</button>
+              </div>
+
+              <div class="flex justify-between font-medium pt-1">
+                <span>Kembalian:</span>
+                <span id="cash-change" class="font-bold text-teal-800">Rp 0</span>
+              </div>
+            </div>
+
+            <button onclick="openCheckoutModal()" id="checkout-btn" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition shadow-lg mt-2">
+              Selesaikan Transaksi & Bayar
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW TAB 2: DASHBOARD -->
+      <section id="view-dashboard" class="hidden space-y-6 overflow-y-auto pr-1">
+        <!-- Stat Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="glass-card p-5 rounded-2xl flex flex-col justify-between">
+            <span class="text-xs font-semibold text-teal-700 tracking-wider uppercase">Omset Hari Ini</span>
+            <div class="mt-2 flex items-baseline justify-between">
+              <span id="stat-omset" class="text-2xl font-bold text-slate-800">Rp 0</span>
+              <span class="p-2 bg-teal-100 text-teal-800 rounded-xl text-xs font-bold">Hari Ini</span>
+            </div>
+          </div>
+          <div class="glass-card p-5 rounded-2xl flex flex-col justify-between">
+            <span class="text-xs font-semibold text-teal-700 tracking-wider uppercase">Jumlah Transaksi</span>
+            <div class="mt-2 flex items-baseline justify-between">
+              <span id="stat-transaksi" class="text-2xl font-bold text-slate-800">0</span>
+              <span class="p-2 bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold">Nota</span>
+            </div>
+          </div>
+          <div class="glass-card p-5 rounded-2xl flex flex-col justify-between">
+            <span class="text-xs font-semibold text-teal-700 tracking-wider uppercase">Makanan Terlaris</span>
+            <div class="mt-2">
+              <span id="stat-terlaris" class="text-lg font-bold text-slate-800 truncate block">-</span>
+            </div>
+          </div>
+          <div class="glass-card p-5 rounded-2xl flex flex-col justify-between">
+            <span class="text-xs font-semibold text-teal-700 tracking-wider uppercase">Metode Pembayaran</span>
+            <div class="mt-2 text-xs font-medium space-y-1">
+              <div class="flex justify-between">
+                <span>Cash:</span> <span id="stat-cash-pct" class="font-bold text-slate-700">0%</span>
+              </div>
+              <div class="flex justify-between">
+                <span>QRIS:</span> <span id="stat-qris-pct" class="font-bold text-slate-700">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border-l-4 border-l-teal-600">
+          <div>
+            <h3 class="font-bold text-slate-800 text-lg">Siap Melayani Pelanggan?</h3>
+            <p class="text-sm text-slate-600 mt-1">Buka Pilihan Menu untuk memasukkan pesanan rombongan multi-pelanggan.</p>
+          </div>
+          <button onclick="switchTab('pilihan-menu')" class="px-5 py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-sm font-semibold transition shadow-md whitespace-nowrap">
+            Mulai Transaksi Kasir &rarr;
+          </button>
+        </div>
+      </section>
+
+      <!-- VIEW TAB 3: LIST HARGA MENU (CRUD) -->
+      <section id="view-list-harga" class="hidden space-y-4 overflow-y-auto pr-1">
+        <div class="flex justify-between items-center">
+          <input type="text" id="crud-search" oninput="renderCrudTable()" placeholder="Cari menu di kelola..." class="px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white/70 w-64">
+          <button onclick="openMenuModal()" class="px-4 py-2 bg-teal-700 text-white text-sm font-semibold rounded-xl hover:bg-teal-800 transition">
+            + Tambah Menu Baru
+          </button>
+        </div>
+
+        <div class="glass-panel overflow-hidden rounded-2xl">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-teal-800/10 text-teal-900 border-b border-teal-100 font-semibold">
+              <tr>
+                <th class="p-3.5">ID Menu</th>
+                <th class="p-3.5">Foto</th>
+                <th class="p-3.5">Nama Menu</th>
+                <th class="p-3.5">Kategori</th>
+                <th class="p-3.5">Harga</th>
+                <th class="p-3.5">Status</th>
+                <th class="p-3.5 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="crud-table-body" class="divide-y divide-slate-100">
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- VIEW TAB 4: LAPORAN KEUANGAN -->
+      <section id="view-laporan" class="hidden space-y-4 overflow-y-auto pr-1">
+        <div class="flex flex-col sm:flex-row justify-between gap-3">
+          <div class="flex gap-2">
+            <input type="text" id="report-search" onchange="fetchReports(1)" placeholder="Cari ID TRX / Metode..." class="px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white/70">
+            <input type="text" id="report-date" onchange="fetchReports(1)" placeholder="dd/mm/yyyy" class="px-4 py-2 text-sm rounded-xl border border-slate-200 bg-white/70">
+          </div>
+          <button onclick="fetchReports(1)" class="px-4 py-2 bg-teal-700 text-white text-sm font-medium rounded-xl">
+            Filter Laporan
+          </button>
+        </div>
+
+        <div class="glass-panel overflow-x-auto rounded-2xl">
+          <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead class="bg-teal-800/10 text-teal-900 border-b border-teal-100 font-semibold">
+              <tr>
+                <th class="p-3.5">ID Transaksi</th>
+                <th class="p-3.5">Tanggal & Jam</th>
+                <th class="p-3.5">Total Bayar</th>
+                <th class="p-3.5">Metode</th>
+                <th class="p-3.5">Cash / Kembali</th>
+                <th class="p-3.5 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="report-table-body" class="divide-y divide-slate-100">
+              <!-- Report Rows with Clean Detail Button -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="flex items-center justify-between p-3 glass-panel text-xs">
+          <span id="page-info">Halaman 1 dari 1</span>
+          <div class="flex gap-2">
+            <button onclick="changePage(-1)" id="prev-page-btn" class="px-3 py-1.5 rounded-lg bg-white/80 border text-slate-700 disabled:opacity-50">Prev</button>
+            <button onclick="changePage(1)" id="next-page-btn" class="px-3 py-1.5 rounded-lg bg-white/80 border text-slate-700 disabled:opacity-50">Next</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL RINGKASAN CHECKOUT TRANSAKSI -->
+  <div id="checkout-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="glass-panel w-full max-w-md p-6 bg-white/95 rounded-2xl shadow-2xl border border-white">
+      <div class="flex justify-between items-center mb-4 border-b pb-3 border-slate-200">
+        <div>
+          <h3 class="text-lg font-bold text-slate-800">Rincian & Nilai Transaksi</h3>
+          <p class="text-xs text-slate-500">Konfirmasi pembayaran sebelum disimpan</p>
+        </div>
+        <span id="modal-pay-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-teal-100 text-teal-800">Cash</span>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div id="modal-summary-items" class="max-h-40 overflow-y-auto space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+          <!-- Dynamic Order Breakdown -->
+        </div>
+
+        <div class="p-3 bg-teal-50/70 rounded-xl border border-teal-100/80 space-y-1.5">
+          <div class="flex justify-between text-slate-600">
+            <span>Total Tagihan:</span>
+            <span id="modal-total-tagihan" class="font-bold text-teal-900 text-sm">Rp 0</span>
+          </div>
+          <div class="flex justify-between text-slate-600">
+            <span>Nominal Dibayar:</span>
+            <span id="modal-cash-dibayar" class="font-semibold text-slate-800">Rp 0</span>
+          </div>
+          <div class="flex justify-between text-slate-600 border-t border-teal-200/60 pt-1">
+            <span>Kembalian:</span>
+            <span id="modal-kembalian" class="font-bold text-emerald-700">Rp 0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-5">
+        <button type="button" onclick="closeCheckoutModal()" class="px-4 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-medium text-xs">Batal</button>
+        <button type="button" onclick="confirmSubmitCheckout()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-lg transition">
+          Konfirmasi & Bayar Sekarang
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DETAIL TRANSAKSI (LAPORAN KEUANGAN) -->
+  <div id="trx-detail-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="glass-panel w-full max-w-lg p-6 bg-white rounded-2xl shadow-2xl border border-white space-y-4">
+      <div class="flex justify-between items-center border-b pb-3 border-slate-200">
+        <div>
+          <h3 id="trx-detail-id" class="font-mono font-bold text-teal-800 text-base">TRX-0000</h3>
+          <p id="trx-detail-time" class="text-xs text-slate-500">10/09/2026 00:00:00</p>
+        </div>
+        <button onclick="closeTrxDetailModal()" class="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+      </div>
+
+      <!-- Printable Area -->
+      <div id="printable-receipt" class="space-y-3 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <div class="text-center border-b pb-2 border-slate-200">
+          <p class="font-bold text-slate-800 text-sm">WARTEG MODERN</p>
+          <p class="text-[11px] text-slate-500">Struk Bukti Pembayaran</p>
+        </div>
+
+        <div id="trx-detail-items-container" class="space-y-2 max-h-48 overflow-y-auto">
+          <!-- Dynamic Sub-Pelanggan Items -->
+        </div>
+
+        <div class="border-t pt-2 space-y-1 text-slate-700">
+          <div class="flex justify-between font-bold">
+            <span>Total Tagihan:</span>
+            <span id="trx-detail-total">Rp 0</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Metode / Dibayar:</span>
+            <span id="trx-detail-pay">Cash / Rp 0</span>
+          </div>
+          <div class="flex justify-between font-semibold text-emerald-700">
+            <span>Kembalian:</span>
+            <span id="trx-detail-change">Rp 0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeTrxDetailModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-semibold">Tutup</button>
+        <button type="button" onclick="printReceipt()" class="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5">
+          <span>🖨️</span> Cetak / Export Struk (PDF)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ADD / EDIT MENU -->
+  <div id="menu-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="glass-panel w-full max-w-md p-6 bg-white/90 rounded-2xl shadow-2xl">
+      <h3 id="modal-title" class="text-lg font-bold text-slate-800 mb-4">Tambah Menu Baru</h3>
+      
+      <form id="menu-form" onsubmit="handleSaveMenu(event)" class="space-y-3 text-sm">
+        <input type="hidden" id="form-menu-id">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Menu</label>
+          <input type="text" id="form-nama" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Kategori</label>
+            <select id="form-kategori" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500">
+              <option value="Makanan">Makanan</option>
+              <option value="Minuman">Minuman</option>
+              <option value="Tambahan">Tambahan</option>
+              <option value="Cafe">Cafe</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Harga (Rp)</label>
+            <input type="number" id="form-harga" required min="0" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">URL Foto (Unsplash/Imgur)</label>
+          <input type="text" id="form-foto" placeholder="https://..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Status Ketersediaan</label>
+          <select id="form-status" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-teal-500">
+            <option value="Tersedia">Tersedia</option>
+            <option value="Habis">Habis</option>
+          </select>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4">
+          <button type="button" onclick="closeMenuModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-teal-700 text-white rounded-xl font-semibold shadow">Simpan Menu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- INCLUDE COMPONENT SUPER ADMIN -->
+  <?!= include('admin'); ?>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+  <?!= include('js'); ?>
+  <?!= include('adminJs'); ?>
+</body>
+</html>
