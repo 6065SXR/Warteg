@@ -1,0 +1,183 @@
+<script>
+  var pendingRestoreContent = null;
+
+  function openAdminLoginModal() {
+    document.getElementById('admin-pin-input').value = '';
+    var modal = document.getElementById('admin-login-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(function() {
+      document.getElementById('admin-pin-input').focus();
+    }, 100);
+  }
+
+  function closeAdminLoginModal() {
+    var modal = document.getElementById('admin-login-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function verifyAdminPin(e) {
+    e.preventDefault();
+    var pin = document.getElementById('admin-pin-input').value;
+    
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(function(correctPin) {
+        if (pin === correctPin) {
+          closeAdminLoginModal();
+          showToast('Login Super Admin Berhasil!', 'success');
+          openAdminPanelModal();
+        } else {
+          showToast('PIN Super Admin Salah!', 'error');
+          document.getElementById('admin-pin-input').value = '';
+        }
+      }).getAdminPin();
+    } else {
+      if (pin === 'biskuitmeong') {
+        closeAdminLoginModal();
+        showToast('Login Super Admin Berhasil (Canvas Mode)!', 'success');
+        openAdminPanelModal();
+      } else {
+        showToast('PIN Super Admin Salah!', 'error');
+      }
+    }
+  }
+
+  function openAdminPanelModal() {
+    var modal = document.getElementById('admin-panel-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeAdminPanelModal() {
+    var modal = document.getElementById('admin-panel-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function openAdminConfirmModal(title, message, onConfirm) {
+    document.getElementById('confirm-modal-title').innerText = title;
+    document.getElementById('confirm-modal-message').innerText = message;
+    var actionBtn = document.getElementById('confirm-modal-action-btn');
+    
+    actionBtn.onclick = function() {
+      closeAdminConfirmModal();
+      if (onConfirm) onConfirm();
+    };
+
+    var modal = document.getElementById('admin-confirm-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeAdminConfirmModal() {
+    var modal = document.getElementById('admin-confirm-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function runSetupDb() {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      showToast('Memproses Safe Migrate Database...', 'info');
+      google.script.run.withSuccessHandler(function(res) {
+        showToast(res.message, res.success ? 'success' : 'error');
+        loadBackendData();
+      }).setupDatabase();
+    } else {
+      showToast('Safe Migrate simulated on Canvas', 'success');
+    }
+  }
+
+  function runBackupDb() {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      showToast('Mengekstrak backup database...', 'info');
+      google.script.run.withSuccessHandler(function(res) {
+        if (res.success) {
+          var blob = new Blob([res.backupJson], { type: 'application/json' });
+          var link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'WartegModern_Backup_' + (new Date().toISOString().slice(0, 10)) + '.json';
+          link.click();
+          showToast('Backup berhasil di-download!', 'success');
+        } else {
+          showToast(res.message, 'error');
+        }
+      }).backupDatabase();
+    } else {
+      showToast('Simulasi Backup sukses (Canvas Mode)', 'success');
+    }
+  }
+
+  function promptRestoreDb(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      pendingRestoreContent = e.target.result;
+      openAdminConfirmModal(
+        'Restore Database',
+        'Apakah Anda yakin ingin memulihkan database dari file ini? Data lama akan ditimpa!',
+        executeRestoreDb
+      );
+    };
+    reader.readAsText(file);
+  }
+
+  function executeRestoreDb() {
+    if (!pendingRestoreContent) return;
+    showToast('Memulihkan database...', 'info');
+    
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(function(res) {
+        showToast(res.message, res.success ? 'success' : 'error');
+        if (res.success) loadBackendData();
+      }).restoreDatabase(pendingRestoreContent);
+    } else {
+      showToast('Simulasi Restore sukses (Canvas Mode)', 'success');
+    }
+    pendingRestoreContent = null;
+  }
+
+  function promptResetDb() {
+    openAdminConfirmModal(
+      'Reset Transaksi',
+      'PERINGATAN! Apakah Anda yakin ingin MENGOSONGKAN SELURUH RIWAYAT TRANSAKSI?',
+      executeResetDb
+    );
+  }
+
+  function executeResetDb() {
+    showToast('Mereset riwayat transaksi...', 'info');
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(function(res) {
+        showToast(res.message, res.success ? 'success' : 'error');
+        if (res.success) loadBackendData();
+      }).resetTransactionDatabase();
+    } else {
+      showToast('Simulasi Reset Transaksi sukses (Canvas Mode)', 'success');
+    }
+  }
+
+  function handleUpdatePin(e) {
+    e.preventDefault();
+    var oldPin = document.getElementById('pin-old-input').value;
+    var newPin = document.getElementById('pin-new-input').value;
+
+    showToast('Memproses ganti PIN...', 'info');
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(function(res) {
+        showToast(res.message, res.success ? 'success' : 'error');
+        if (res.success) {
+          document.getElementById('pin-old-input').value = '';
+          document.getElementById('pin-new-input').value = '';
+        }
+      }).updateAdminPin(oldPin, newPin);
+    } else {
+      showToast('Simulasi Ganti PIN Berhasil! (Canvas Mode)', 'success');
+      document.getElementById('pin-old-input').value = '';
+      document.getElementById('pin-new-input').value = '';
+    }
+  }
+</script>
