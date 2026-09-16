@@ -1,7 +1,9 @@
 <script>
   var pendingRestoreContent = null;
+  var adminLoginTarget = null;
 
-  function openAdminLoginModal() {
+  function openAdminLoginModal(target) {
+    adminLoginTarget = target || 'panel';
     document.getElementById('admin-pin-input').value = '';
     var modal = document.getElementById('admin-login-modal');
     modal.classList.remove('hidden');
@@ -21,12 +23,20 @@
     e.preventDefault();
     var pin = document.getElementById('admin-pin-input').value;
     
+    var handleSuccess = function() {
+      closeAdminLoginModal();
+      showToast('PIN Berhasil Diverifikasi!', 'success');
+      if (adminLoginTarget === 'list-harga') {
+        switchTab('list-harga');
+      } else {
+        openAdminPanelModal();
+      }
+    };
+
     if (typeof google !== 'undefined' && google.script && google.script.run) {
       google.script.run.withSuccessHandler(function(correctPin) {
         if (pin === correctPin) {
-          closeAdminLoginModal();
-          showToast('Login Super Admin Berhasil!', 'success');
-          openAdminPanelModal();
+          handleSuccess();
         } else {
           showToast('PIN Super Admin Salah!', 'error');
           document.getElementById('admin-pin-input').value = '';
@@ -34,11 +44,10 @@
       }).getAdminPin();
     } else {
       if (pin === 'biskuitmeong') {
-        closeAdminLoginModal();
-        showToast('Login Super Admin Berhasil (Canvas Mode)!', 'success');
-        openAdminPanelModal();
+        handleSuccess();
       } else {
         showToast('PIN Super Admin Salah!', 'error');
+        document.getElementById('admin-pin-input').value = '';
       }
     }
   }
